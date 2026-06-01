@@ -30,8 +30,8 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-brand-800 to-brand-600 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex w-16 h-16 bg-white rounded-2xl shadow-lg items-center justify-center mb-4">
-            <span className="text-brand-700 text-2xl font-black">A</span>
+          <div className="inline-flex w-16 h-16 bg-white rounded-2xl shadow-lg items-center justify-center mb-4 p-2">
+            <img src="https://res.cloudinary.com/dfbyxhi5n/image/upload/v1780271656/favicon_cpxutb.png" alt="Apel" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-white">Apel Admin</h1>
           <p className="text-brand-200 text-sm mt-1">Sign in to manage your websites</p>

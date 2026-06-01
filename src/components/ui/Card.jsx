@@ -2,7 +2,10 @@ import { clsx } from 'clsx'
 
 export function Card({ children, className, ...props }) {
   return (
-    <div {...props} className={clsx('bg-white rounded-xl border border-gray-200 shadow-sm', className)}>
+    <div
+      {...props}
+      className={clsx('bg-white rounded-2xl border border-slate-100 shadow-card', className)}
+    >
       {children}
     </div>
   )
@@ -10,7 +13,7 @@ export function Card({ children, className, ...props }) {
 
 export function CardHeader({ children, className }) {
   return (
-    <div className={clsx('px-6 py-4 border-b border-gray-100', className)}>
+    <div className={clsx('px-6 py-4 border-b border-slate-100', className)}>
       {children}
     </div>
   )

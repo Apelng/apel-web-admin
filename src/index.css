@@ -1,30 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  }
+  *, *::before, *::after { box-sizing: border-box; }
+
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar        { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { @apply bg-slate-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-300; }
+}
+
+@layer components {
+  .page-content {
+    @apply px-8 py-7;
   }
 }
 
-/* TipTap editor styles */
+/* TipTap editor */
 .tiptap {
-  @apply min-h-[300px] p-4 outline-none;
+  @apply min-h-[320px] p-4 outline-none text-sm leading-relaxed;
 }
 .tiptap p.is-editor-empty:first-child::before {
-  @apply text-gray-400 float-left h-0 pointer-events-none;
+  @apply text-slate-400 float-left h-0 pointer-events-none;
   content: attr(data-placeholder);
 }
-.tiptap h1 { @apply text-2xl font-bold mb-3; }
-.tiptap h2 { @apply text-xl font-bold mb-2; }
-.tiptap h3 { @apply text-lg font-semibold mb-2; }
-.tiptap p  { @apply mb-3; }
-.tiptap ul { @apply list-disc pl-5 mb-3; }
-.tiptap ol { @apply list-decimal pl-5 mb-3; }
-.tiptap blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-3; }
+.tiptap h1 { @apply text-2xl font-bold mb-3 text-slate-900; }
+.tiptap h2 { @apply text-xl font-bold mb-2 text-slate-900; }
+.tiptap h3 { @apply text-lg font-semibold mb-2 text-slate-800; }
+.tiptap p  { @apply mb-3 text-slate-700; }
+.tiptap ul { @apply list-disc pl-5 mb-3 text-slate-700; }
+.tiptap ol { @apply list-decimal pl-5 mb-3 text-slate-700; }
+.tiptap blockquote { @apply border-l-4 border-slate-200 pl-4 italic text-slate-500 mb-3; }
 .tiptap a  { @apply text-brand-600 underline; }
-.tiptap img { @apply rounded-lg max-w-full; }
+.tiptap img { @apply rounded-xl max-w-full my-3; }

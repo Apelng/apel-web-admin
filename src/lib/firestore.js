@@ -1,6 +1,7 @@
 import {
   collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
   getDocs, getDoc, query, orderBy, where, serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
 
@@ -36,6 +37,20 @@ export async function updateGalleryImage(siteId, imageId, data) {
 
 export async function deleteGalleryImage(siteId, imageId) {
   return deleteDoc(siteDoc(siteId, 'gallery', imageId))
+}
+
+export async function deleteGalleryImages(siteId, imageIds) {
+  const batch = writeBatch(db)
+  imageIds.forEach(id => batch.delete(siteDoc(siteId, 'gallery', id)))
+  return batch.commit()
+}
+
+export async function renameCategoryImages(siteId, oldName, newName) {
+  const q    = query(siteCol(siteId, 'gallery'), where('category', '==', oldName))
+  const snap = await getDocs(q)
+  const batch = writeBatch(db)
+  snap.docs.forEach(d => batch.update(d.ref, { category: newName }))
+  return batch.commit()
 }
 
 // ─── blog ────────────────────────────────────────────────────────────────────
