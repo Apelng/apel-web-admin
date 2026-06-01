@@ -157,12 +157,19 @@ function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, on
           }
         </button>
 
-        {/* Category chip */}
-        {image.category && (
-          <span className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
-            {image.category}
-          </span>
-        )}
+        {/* Year + category chips */}
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+          {image.year && (
+            <span className="bg-brand-600/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+              {image.year}
+            </span>
+          )}
+          {image.category && (
+            <span className="bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+              {image.category}
+            </span>
+          )}
+        </div>
 
         {/* Hover actions */}
         {!selectMode && (
@@ -216,6 +223,7 @@ function UploadModal({ siteId, categories, onClose, onUploaded }) {
   const [category, setCategory]       = useState(categories[0] || '')
   const [newCategory, setNewCategory] = useState('')
   const [useNew, setUseNew]           = useState(categories.length === 0)
+  const [year, setYear]               = useState(String(new Date().getFullYear()))
   const [uploading, setUploading]     = useState(false)
   const [progress, setProgress]       = useState([])
   const [errors, setErrors]           = useState([])
@@ -258,6 +266,7 @@ function UploadModal({ siteId, categories, onClose, onUploaded }) {
             publicId: res.public_id,
             title:    files[i].name.replace(/\.[^.]+$/, ''),
             category: finalCategory,
+            year:     year.trim() || String(new Date().getFullYear()),
             order:    Date.now() + i,
           })
           setProgress(p => p.map((s, idx) => idx === i ? 'done' : s))
@@ -347,6 +356,36 @@ function UploadModal({ siteId, categories, onClose, onUploaded }) {
             )}
           </div>
 
+          {/* Year */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Year <span className="text-slate-300 font-normal normal-case">(groups photos into year albums on the website)</span>
+            </label>
+            <div className="flex gap-2">
+              {[String(new Date().getFullYear()), String(new Date().getFullYear() - 1), String(new Date().getFullYear() - 2)].map(y => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setYear(y)}
+                  className={clsx(
+                    'px-4 py-2 rounded-xl text-sm font-semibold border transition-all',
+                    year === y
+                      ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  )}
+                >
+                  {y}
+                </button>
+              ))}
+              <input
+                value={year}
+                onChange={e => setYear(e.target.value)}
+                placeholder="Other…"
+                className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold"
+              />
+            </div>
+          </div>
+
           {/* Drop zone */}
           <label
             onDragOver={e => { e.preventDefault(); setDragging(true) }}
@@ -420,6 +459,7 @@ export default function Gallery() {
   const [images, setImages]                 = useState([])
   const [loading, setLoading]               = useState(true)
   const [activeCategory, setActiveCategory] = useState(null)
+  const [activeYear, setActiveYear]         = useState(null)
   const [showUpload, setShowUpload]         = useState(false)
   const [selected, setSelected]             = useState(new Set())
   const [bulkDeleting, setBulkDeleting]     = useState(false)
@@ -434,9 +474,11 @@ export default function Gallery() {
 
   useEffect(() => { load() }, [load])
 
-  const categories = [...new Set(images.map(i => i.category).filter(Boolean))].sort()
-  const filtered   = activeCategory ? images.filter(i => i.category === activeCategory) : images
-  const selectMode = selected.size > 0
+  const categories     = [...new Set(images.map(i => i.category).filter(Boolean))].sort()
+  const byCat          = activeCategory ? images.filter(i => i.category === activeCategory) : images
+  const availableYears = [...new Set(byCat.map(i => i.year).filter(Boolean))].sort((a, b) => b - a)
+  const filtered       = activeYear ? byCat.filter(i => i.year === activeYear) : byCat
+  const selectMode     = selected.size > 0
 
   function toggleSelect(id) {
     setSelected(s => {
@@ -515,9 +557,37 @@ export default function Gallery() {
         <CategoryBar
           categories={categories}
           active={activeCategory}
-          onSelect={setActiveCategory}
+          onSelect={cat => { setActiveCategory(cat); setActiveYear(null) }}
           onRename={handleRenameCategory}
         />
+      )}
+
+      {/* Year sub-tabs */}
+      {availableYears.length > 0 && (
+        <div className="flex items-center gap-2 px-8 py-2.5 bg-slate-50 border-b border-slate-100">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Year</span>
+          <button
+            onClick={() => setActiveYear(null)}
+            className={clsx(
+              'px-3 py-1 rounded-lg text-xs font-semibold transition-all',
+              activeYear === null ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700'
+            )}
+          >
+            All
+          </button>
+          {availableYears.map(y => (
+            <button
+              key={y}
+              onClick={() => setActiveYear(y)}
+              className={clsx(
+                'px-3 py-1 rounded-lg text-xs font-semibold transition-all',
+                activeYear === y ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700'
+              )}
+            >
+              {y}
+            </button>
+          ))}
+        </div>
       )}
 
       {/* Grid */}
