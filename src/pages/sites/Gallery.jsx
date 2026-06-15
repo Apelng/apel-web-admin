@@ -9,6 +9,7 @@ import { getSite } from '@/lib/sites'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { clsx } from 'clsx'
 import {
   Upload, Trash2, Pencil, X, Check, FolderPlus,
@@ -106,18 +107,18 @@ function CategoryBar({ categories, active, onSelect, onRename }) {
 // ─── Individual image card ─────────────────────────────────────────────────────
 
 function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, onUpdate }) {
-  const [editing, setEditing] = useState(false)
-  const [title, setTitle]     = useState(image.title || '')
-  const [saving, setSaving]   = useState(false)
-  const toast                 = useToast()
+  const [editing, setEditing]         = useState(false)
+  const [description, setDescription] = useState(image.description || '')
+  const [saving, setSaving]           = useState(false)
+  const toast                         = useToast()
 
-  async function saveTitle() {
+  async function saveDescription() {
     setSaving(true)
-    await updateGalleryImage(siteId, image.id, { title })
-    onUpdate(image.id, { title })
+    await updateGalleryImage(siteId, image.id, { description })
+    onUpdate(image.id, { description })
     setSaving(false)
     setEditing(false)
-    toast('Title updated')
+    toast('Description saved')
   }
 
   function handleCardClick() {
@@ -136,10 +137,10 @@ function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, on
       )}
     >
       {/* Image */}
-      <div className="relative aspect-video overflow-hidden bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <img
           src={image.url}
-          alt={image.title}
+          alt={image.category || image.year || ''}
           className={clsx('w-full h-full object-cover transition-transform duration-300', !selectMode && 'group-hover:scale-105')}
         />
 
@@ -171,18 +172,18 @@ function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, on
           )}
         </div>
 
-        {/* Hover actions */}
+        {/* Hover actions — pointer-events-none so the overlay doesn't block the checkbox */}
         {!selectMode && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-2 gap-1.5">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-2 gap-1.5 pointer-events-none">
             <button
               onClick={e => { e.stopPropagation(); setEditing(true) }}
-              className="p-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-slate-700 hover:bg-white transition-colors shadow-sm"
+              className="pointer-events-auto p-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-slate-700 hover:bg-white transition-colors shadow-sm"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={e => { e.stopPropagation(); onDelete(image.id) }}
-              className="p-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-red-500 hover:bg-white transition-colors shadow-sm"
+              className="pointer-events-auto p-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-red-500 hover:bg-white transition-colors shadow-sm"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -190,18 +191,19 @@ function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, on
         )}
       </div>
 
-      {/* Title */}
-      <div className="px-3 py-2.5">
+      {/* Description */}
+      <div className="px-3 py-2.5 min-h-[36px]">
         {editing ? (
           <div className="flex items-center gap-1.5">
             <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditing(false) }}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveDescription(); if (e.key === 'Escape') setEditing(false) }}
+              placeholder="Add a description…"
               className="flex-1 text-xs border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
               autoFocus
             />
-            <button onClick={saveTitle} disabled={saving} className="text-emerald-600 hover:text-emerald-700 disabled:opacity-40">
+            <button onClick={saveDescription} disabled={saving} className="text-emerald-600 hover:text-emerald-700 disabled:opacity-40">
               <Check className="h-3.5 w-3.5" />
             </button>
             <button onClick={() => setEditing(false)} className="text-slate-400 hover:text-slate-600">
@@ -209,7 +211,12 @@ function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, on
             </button>
           </div>
         ) : (
-          <p className="text-xs text-slate-600 truncate font-medium">{image.title || <span className="text-slate-300 italic">Untitled</span>}</p>
+          <p className="text-xs truncate">
+            {image.description
+              ? <span className="text-slate-600 font-medium">{image.description}</span>
+              : <span className="text-slate-300 italic">Click ✎ to add description</span>
+            }
+          </p>
         )}
       </div>
     </div>
@@ -262,12 +269,12 @@ function UploadModal({ siteId, categories, onClose, onUploaded }) {
         )
         try {
           await addGalleryImage(siteId, {
-            url:      res.secure_url,
-            publicId: res.public_id,
-            title:    files[i].name.replace(/\.[^.]+$/, ''),
-            category: finalCategory,
-            year:     year.trim() || String(new Date().getFullYear()),
-            order:    Date.now() + i,
+            url:         res.secure_url,
+            publicId:    res.public_id,
+            description: '',
+            category:    finalCategory,
+            year:        year.trim() || String(new Date().getFullYear()),
+            order:       Date.now() + i,
           })
           setProgress(p => p.map((s, idx) => idx === i ? 'done' : s))
           doneCount++
@@ -463,6 +470,7 @@ export default function Gallery() {
   const [showUpload, setShowUpload]         = useState(false)
   const [selected, setSelected]             = useState(new Set())
   const [bulkDeleting, setBulkDeleting]     = useState(false)
+  const [confirmModal, setConfirmModal]     = useState(null)
   const toast                               = useToast()
   const dropRef                             = useRef()
 
@@ -491,23 +499,39 @@ export default function Gallery() {
   function selectAll()   { setSelected(new Set(filtered.map(i => i.id))) }
   function clearSelect() { setSelected(new Set()) }
 
-  async function handleDelete(imageId) {
-    if (!confirm('Remove this image from the gallery?')) return
-    await deleteGalleryImage(siteId, imageId)
-    setImages(imgs => imgs.filter(x => x.id !== imageId))
-    selected.has(imageId) && setSelected(s => { const n = new Set(s); n.delete(imageId); return n })
-    toast('Image removed')
+  function handleDelete(imageId) {
+    setConfirmModal({
+      title: 'Remove image',
+      message: 'This image will be removed from the gallery. This cannot be undone.',
+      confirmLabel: 'Remove',
+      danger: true,
+      onConfirm: async () => {
+        await deleteGalleryImage(siteId, imageId)
+        setImages(imgs => imgs.filter(x => x.id !== imageId))
+        selected.has(imageId) && setSelected(s => { const n = new Set(s); n.delete(imageId); return n })
+        setConfirmModal(null)
+        toast('Image removed')
+      },
+    })
   }
 
-  async function handleBulkDelete() {
-    if (!confirm(`Delete ${selected.size} image${selected.size > 1 ? 's' : ''}? This cannot be undone.`)) return
-    setBulkDeleting(true)
+  function handleBulkDelete() {
     const ids = Array.from(selected)
-    await deleteGalleryImages(siteId, ids)
-    setImages(imgs => imgs.filter(x => !selected.has(x.id)))
-    setSelected(new Set())
-    setBulkDeleting(false)
-    toast(`${ids.length} image${ids.length > 1 ? 's' : ''} deleted`)
+    setConfirmModal({
+      title: `Delete ${ids.length} image${ids.length > 1 ? 's' : ''}`,
+      message: `You're about to permanently delete ${ids.length} image${ids.length > 1 ? 's' : ''}. This cannot be undone.`,
+      confirmLabel: `Delete ${ids.length}`,
+      danger: true,
+      onConfirm: async () => {
+        setBulkDeleting(true)
+        await deleteGalleryImages(siteId, ids)
+        setImages(imgs => imgs.filter(x => !selected.has(x.id)))
+        setSelected(new Set())
+        setBulkDeleting(false)
+        setConfirmModal(null)
+        toast(`${ids.length} image${ids.length > 1 ? 's' : ''} deleted`)
+      },
+    })
   }
 
   function handleUpdate(imageId, data) {
@@ -525,12 +549,17 @@ export default function Gallery() {
     <div className="flex flex-col min-h-full">
       <PageHeader
         title={`${site?.name} — Gallery`}
-        subtitle={`${images.length} image${images.length !== 1 ? 's' : ''}${categories.length ? ` · ${categories.length} categories` : ''}`}
+        subtitle={`${images.length} image${images.length !== 1 ? 's' : ''} total${categories.length ? ` · ${categories.length} ${categories.length === 1 ? 'category' : 'categories'}` : ''}`}
         actions={
           <div className="flex items-center gap-2">
             {selectMode ? (
               <>
-                <span className="text-xs text-slate-500 font-medium">{selected.size} selected</span>
+                <span className="text-xs text-slate-500 font-medium">{selected.size} of {filtered.length} selected</span>
+                {selected.size < filtered.length && (
+                  <Button size="sm" variant="secondary" onClick={selectAll}>
+                    <CheckSquare className="h-3.5 w-3.5" /> Select all
+                  </Button>
+                )}
                 <Button size="sm" variant="secondary" onClick={clearSelect}>Deselect</Button>
                 <Button size="sm" variant="danger" onClick={handleBulkDelete} loading={bulkDeleting}>
                   <Trash2 className="h-3.5 w-3.5" /> Delete {selected.size}
@@ -564,13 +593,13 @@ export default function Gallery() {
 
       {/* Year sub-tabs */}
       {availableYears.length > 0 && (
-        <div className="flex items-center gap-2 px-8 py-2.5 bg-slate-50 border-b border-slate-100">
-          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Year</span>
+        <div className="flex items-center gap-1.5 px-8 py-2 bg-slate-50 border-b border-slate-100">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Year</span>
           <button
             onClick={() => setActiveYear(null)}
             className={clsx(
-              'px-3 py-1 rounded-lg text-xs font-semibold transition-all',
-              activeYear === null ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700'
+              'px-3 py-1 rounded-full text-xs font-semibold transition-all',
+              activeYear === null ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'
             )}
           >
             All
@@ -580,39 +609,40 @@ export default function Gallery() {
               key={y}
               onClick={() => setActiveYear(y)}
               className={clsx(
-                'px-3 py-1 rounded-lg text-xs font-semibold transition-all',
-                activeYear === y ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700'
+                'px-3 py-1 rounded-full text-xs font-semibold transition-all',
+                activeYear === y ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'
               )}
             >
               {y}
             </button>
           ))}
+          <span className="ml-auto text-[11px] text-slate-400">{filtered.length} image{filtered.length !== 1 ? 's' : ''}</span>
         </div>
       )}
 
       {/* Grid */}
       <div className="px-8 py-6 flex-1">
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-video rounded-2xl bg-slate-100 animate-pulse" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="aspect-[4/3] rounded-2xl bg-slate-100 animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <label className="flex flex-col items-center gap-4 rounded-3xl border-2 border-dashed border-slate-200 p-16 cursor-pointer hover:border-brand-400 hover:bg-brand-50/30 transition-all text-center group">
+          <button
+            onClick={() => setShowUpload(true)}
+            className="w-full flex flex-col items-center gap-4 rounded-3xl border-2 border-dashed border-slate-200 p-16 hover:border-brand-400 hover:bg-brand-50/30 transition-all text-center group"
+          >
             <div className="w-16 h-16 rounded-2xl bg-slate-100 group-hover:bg-brand-100 flex items-center justify-center transition-colors">
               <Upload className="h-7 w-7 text-slate-300 group-hover:text-brand-500 transition-colors" />
             </div>
             <div>
               <p className="font-semibold text-slate-600">No images yet</p>
-              <p className="text-sm text-slate-400 mt-1">Click to upload your first images with a category</p>
+              <p className="text-sm text-slate-400 mt-1">Click to upload your first images</p>
             </div>
-            <input type="file" accept="image/*" multiple className="hidden" onChange={e => {
-              if (e.target.files.length) setShowUpload(true)
-            }} />
-          </label>
+          </button>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {filtered.map(img => (
               <ImageCard
                 key={img.id}
@@ -626,13 +656,15 @@ export default function Gallery() {
               />
             ))}
             {/* Add more tile */}
-            <button
-              onClick={() => setShowUpload(true)}
-              className="aspect-video rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:border-brand-400 hover:text-brand-400 hover:bg-brand-50/30 transition-all"
-            >
-              <Upload className="h-5 w-5" />
-              <span className="text-xs font-medium">Add more</span>
-            </button>
+            {!selectMode && (
+              <button
+                onClick={() => setShowUpload(true)}
+                className="aspect-[4/3] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:border-brand-400 hover:text-brand-400 hover:bg-brand-50/30 transition-all"
+              >
+                <Upload className="h-5 w-5" />
+                <span className="text-xs font-medium">Add more</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -643,6 +675,17 @@ export default function Gallery() {
           categories={categories}
           onClose={() => setShowUpload(false)}
           onUploaded={load}
+        />
+      )}
+
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          danger={confirmModal.danger}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
         />
       )}
     </div>

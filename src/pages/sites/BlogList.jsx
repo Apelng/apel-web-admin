@@ -8,14 +8,16 @@ import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
 import { format } from 'date-fns'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 export default function BlogList() {
   const { siteId } = useParams()
   const navigate    = useNavigate()
   const site        = getSite(siteId)
-  const [posts, setPosts]       = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [deleting, setDeleting] = useState(null)
+  const [posts, setPosts]           = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [deleting, setDeleting]     = useState(null)
+  const [confirmModal, setConfirmModal] = useState(null)
 
   async function load() {
     setLoading(true)
@@ -34,12 +36,20 @@ export default function BlogList() {
     load()
   }
 
-  async function handleDelete(post) {
-    if (!confirm(`Delete "${post.title}"?`)) return
-    setDeleting(post.id)
-    await deleteBlogPost(siteId, post.id)
-    setPosts(p => p.filter(x => x.id !== post.id))
-    setDeleting(null)
+  function handleDelete(post) {
+    setConfirmModal({
+      title: 'Delete post',
+      message: `"${post.title}" will be permanently deleted.`,
+      confirmLabel: 'Delete',
+      danger: true,
+      onConfirm: async () => {
+        setDeleting(post.id)
+        await deleteBlogPost(siteId, post.id)
+        setPosts(p => p.filter(x => x.id !== post.id))
+        setDeleting(null)
+        setConfirmModal(null)
+      },
+    })
   }
 
   return (
@@ -110,6 +120,17 @@ export default function BlogList() {
           </Card>
         )}
       </div>
+
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          danger={confirmModal.danger}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   )
 }

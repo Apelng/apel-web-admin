@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Card, CardBody } from '@/components/ui/Card'
 import { Plus, Trash2, Save, Upload } from 'lucide-react'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 function MemberCard({ member, siteId, onDelete, onUpdate }) {
   const [data, setData]       = useState({ name: member.name || '', role: member.role || '', bio: member.bio || '', photo: member.photo || '' })
@@ -97,9 +98,10 @@ function MemberCard({ member, siteId, onDelete, onUpdate }) {
 export default function Team() {
   const { siteId } = useParams()
   const site        = getSite(siteId)
-  const [members, setMembers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [adding, setAdding]   = useState(false)
+  const [members, setMembers]           = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [adding, setAdding]             = useState(false)
+  const [confirmModal, setConfirmModal] = useState(null)
 
   useEffect(() => {
     getTeam(siteId).then(m => { setMembers(m); setLoading(false) })
@@ -112,10 +114,18 @@ export default function Team() {
     setAdding(false)
   }
 
-  async function handleDelete(memberId) {
-    if (!confirm('Remove this team member?')) return
-    await deleteTeamMember(siteId, memberId)
-    setMembers(m => m.filter(x => x.id !== memberId))
+  function handleDelete(memberId) {
+    setConfirmModal({
+      title: 'Remove team member',
+      message: 'This team member will be permanently removed.',
+      confirmLabel: 'Remove',
+      danger: true,
+      onConfirm: async () => {
+        await deleteTeamMember(siteId, memberId)
+        setMembers(m => m.filter(x => x.id !== memberId))
+        setConfirmModal(null)
+      },
+    })
   }
 
   function handleUpdate(memberId, data) {
@@ -148,6 +158,17 @@ export default function Team() {
           ))
         )}
       </div>
+
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          danger={confirmModal.danger}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   )
 }
