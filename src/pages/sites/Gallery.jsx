@@ -127,6 +127,7 @@ function ImageCard({ image, siteId, selected, selectMode, onToggle, onDelete, on
 
   return (
     <div
+      data-image-id={image.id}
       onClick={handleCardClick}
       className={clsx(
         'group relative bg-white rounded-2xl border overflow-hidden transition-all duration-150',
@@ -471,8 +472,10 @@ export default function Gallery() {
   const [selected, setSelected]             = useState(new Set())
   const [bulkDeleting, setBulkDeleting]     = useState(false)
   const [confirmModal, setConfirmModal]     = useState(null)
+  const [selBox, setSelBox]                 = useState(null)
   const toast                               = useToast()
-  const dropRef                             = useRef()
+  const gridRef                             = useRef()
+  const dragRef                             = useRef({ active: false, startX: 0, startY: 0 })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -481,6 +484,39 @@ export default function Gallery() {
   }, [siteId])
 
   useEffect(() => { load() }, [load])
+
+  // Drag-to-select: document-level move/up so drag works outside the grid
+  useEffect(() => {
+    function onMouseMove(e) {
+      const d = dragRef.current
+      if (!d.active) return
+      const x = Math.min(d.startX, e.clientX)
+      const y = Math.min(d.startY, e.clientY)
+      const w = Math.abs(e.clientX - d.startX)
+      const h = Math.abs(e.clientY - d.startY)
+      setSelBox({ x, y, w, h })
+      if (w < 5 || h < 5) return
+      const sel = new Set()
+      gridRef.current?.querySelectorAll('[data-image-id]').forEach(el => {
+        const r = el.getBoundingClientRect()
+        if (r.left < x + w && r.right > x && r.top < y + h && r.bottom > y) {
+          sel.add(el.dataset.imageId)
+        }
+      })
+      setSelected(sel)
+    }
+    function onMouseUp() {
+      if (!dragRef.current.active) return
+      dragRef.current.active = false
+      setSelBox(null)
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [setSelected])
 
   const categories     = [...new Set(images.map(i => i.category).filter(Boolean))].sort()
   const byCat          = activeCategory ? images.filter(i => i.category === activeCategory) : images
@@ -498,6 +534,15 @@ export default function Gallery() {
 
   function selectAll()   { setSelected(new Set(filtered.map(i => i.id))) }
   function clearSelect() { setSelected(new Set()) }
+
+  function onGridMouseDown(e) {
+    if (e.button !== 0) return
+    if (e.target.closest('[data-image-id]')) return  // let card handle its own clicks
+    e.preventDefault()
+    dragRef.current = { active: true, startX: e.clientX, startY: e.clientY }
+    setSelBox({ x: e.clientX, y: e.clientY, w: 0, h: 0 })
+    setSelected(new Set())  // clear existing selection on new drag
+  }
 
   function handleDelete(imageId) {
     setConfirmModal({
@@ -642,7 +687,14 @@ export default function Gallery() {
             </div>
           </button>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <div
+            ref={gridRef}
+            onMouseDown={onGridMouseDown}
+            className={clsx(
+              'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4',
+              selBox && 'select-none'
+            )}
+          >
             {filtered.map(img => (
               <ImageCard
                 key={img.id}
@@ -675,6 +727,24 @@ export default function Gallery() {
           categories={categories}
           onClose={() => setShowUpload(false)}
           onUploaded={load}
+        />
+      )}
+
+      {/* Drag selection rubber-band box */}
+      {selBox && selBox.w > 5 && selBox.h > 5 && (
+        <div
+          style={{
+            position: 'fixed',
+            left: selBox.x,
+            top:  selBox.y,
+            width:  selBox.w,
+            height: selBox.h,
+            pointerEvents: 'none',
+            zIndex: 40,
+            border: '1.5px solid #6366f1',
+            background: 'rgba(99,102,241,0.08)',
+            borderRadius: 4,
+          }}
         />
       )}
 
