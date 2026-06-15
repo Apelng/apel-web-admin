@@ -599,7 +599,7 @@ export default function Gallery() {
           <div className="flex items-center gap-2">
             {selectMode ? (
               <>
-                <span className="text-xs text-slate-500 font-medium">{selected.size} of {filtered.length} selected</span>
+                <span className="text-xs text-slate-500 font-medium">{selected.size} of {images.length} selected</span>
                 {selected.size < filtered.length && (
                   <Button size="sm" variant="secondary" onClick={selectAll}>
                     <CheckSquare className="h-3.5 w-3.5" /> Select all
@@ -636,8 +636,8 @@ export default function Gallery() {
         />
       )}
 
-      {/* Year sub-tabs */}
-      {availableYears.length > 0 && (
+      {/* Year sub-tabs — only visible when inside a specific category */}
+      {activeCategory !== null && availableYears.length > 0 && (
         <div className="flex items-center gap-1.5 px-8 py-2 bg-slate-50 border-b border-slate-100">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Year</span>
           <button
@@ -666,14 +666,20 @@ export default function Gallery() {
       )}
 
       {/* Grid */}
-      <div className="px-8 py-6 flex-1">
+      <div
+        ref={gridRef}
+        onMouseDown={onGridMouseDown}
+        className={clsx('px-8 py-6 flex-1', selBox && 'select-none')}
+      >
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="aspect-[4/3] rounded-2xl bg-slate-100 animate-pulse" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+
+        ) : images.length === 0 ? (
+          /* No images at all */
           <button
             onClick={() => setShowUpload(true)}
             className="w-full flex flex-col items-center gap-4 rounded-3xl border-2 border-dashed border-slate-200 p-16 hover:border-brand-400 hover:bg-brand-50/30 transition-all text-center group"
@@ -686,15 +692,60 @@ export default function Gallery() {
               <p className="text-sm text-slate-400 mt-1">Click to upload your first images</p>
             </div>
           </button>
+
+        ) : activeCategory === null ? (
+          /* "All" tab — show each category as its own section */
+          <div className="flex flex-col gap-10">
+            {categories.map(cat => {
+              const catImgs = images.filter(i => i.category === cat)
+              const preview = catImgs.slice(0, 8)
+              return (
+                <section key={cat}>
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <h2 className="text-sm font-semibold text-slate-800">{cat}</h2>
+                    <span className="text-xs text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">{catImgs.length}</span>
+                    <button
+                      onClick={() => { setActiveCategory(cat); setActiveYear(null) }}
+                      className="ml-auto text-xs text-brand-600 font-medium hover:text-brand-700 transition-colors"
+                    >
+                      Open category →
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    {preview.map(img => (
+                      <ImageCard
+                        key={img.id}
+                        image={img}
+                        siteId={siteId}
+                        selected={selected.has(img.id)}
+                        selectMode={selectMode}
+                        onToggle={toggleSelect}
+                        onDelete={handleDelete}
+                        onUpdate={handleUpdate}
+                      />
+                    ))}
+                    {catImgs.length > 8 && (
+                      <button
+                        onClick={() => { setActiveCategory(cat); setActiveYear(null) }}
+                        className="aspect-[4/3] rounded-2xl bg-slate-100 hover:bg-brand-50 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-brand-600 transition-all"
+                      >
+                        <span className="text-2xl font-bold">+{catImgs.length - 8}</span>
+                        <span className="text-xs font-medium">more</span>
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+
+        ) : filtered.length === 0 ? (
+          /* Category selected but no images match the year filter */
+          <p className="text-sm text-slate-400">No images for this filter.</p>
+
         ) : (
-          <div
-            ref={gridRef}
-            onMouseDown={onGridMouseDown}
-            className={clsx(
-              'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4',
-              selBox && 'select-none'
-            )}
-          >
+          /* Specific category — flat grid with year filter */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {filtered.map(img => (
               <ImageCard
                 key={img.id}
@@ -707,7 +758,6 @@ export default function Gallery() {
                 onUpdate={handleUpdate}
               />
             ))}
-            {/* Add more tile */}
             {!selectMode && (
               <button
                 onClick={() => setShowUpload(true)}
