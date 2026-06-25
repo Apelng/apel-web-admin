@@ -17,7 +17,7 @@ export const SITES = [
     Icon:     TrendingUp,
     iconBg:   'bg-emerald-50',
     iconText: 'text-emerald-600' ,
-    features: ['blog', 'gallery', 'pages', 'team'],
+    features: ['blog', 'gallery', 'pages', 'team', 'popups'],
   },
   {
     id:       'registrars',
