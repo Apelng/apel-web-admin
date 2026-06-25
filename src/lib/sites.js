@@ -8,7 +8,7 @@ export const SITES = [
     Icon:     Building2,
     iconBg:   'bg-brand-50',
     iconText: 'text-brand-600',
-    features: ['blog', 'gallery', 'pages', 'team'],
+    features: ['blog', 'gallery', 'pages', 'team', 'popups'],
   },
   {
     id:       'wealth',

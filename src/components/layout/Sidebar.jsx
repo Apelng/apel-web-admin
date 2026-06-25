@@ -4,15 +4,16 @@ import { SITES } from '@/lib/sites'
 import { useAuth } from '@/context/AuthContext'
 import {
   LayoutDashboard, Image, FileText, Users, Settings,
-  LogOut, ChevronRight, Globe, ExternalLink,
+  LogOut, ChevronRight, Globe, ExternalLink, Megaphone,
 } from 'lucide-react'
 import { useState } from 'react'
 
 const siteNav = [
-  { to: 'blog',    label: 'Blog',    icon: FileText, feature: 'blog' },
-  { to: 'gallery', label: 'Gallery', icon: Image,    feature: 'gallery' },
-  { to: 'pages',   label: 'Pages',   icon: Globe,    feature: 'pages' },
-  { to: 'team',    label: 'Team',    icon: Users,    feature: 'team' },
+  { to: 'blog',    label: 'Blog',    icon: FileText,  feature: 'blog' },
+  { to: 'gallery', label: 'Gallery', icon: Image,     feature: 'gallery' },
+  { to: 'pages',   label: 'Pages',   icon: Globe,     feature: 'pages' },
+  { to: 'team',    label: 'Team',    icon: Users,     feature: 'team' },
+  { to: 'popups',  label: 'Popups',  icon: Megaphone, feature: 'popups' },
 ]
 
 function SiteSection({ site }) {

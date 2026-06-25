@@ -125,3 +125,39 @@ export async function updateTeamMember(siteId, memberId, data) {
 export async function deleteTeamMember(siteId, memberId) {
   return deleteDoc(siteDoc(siteId, 'team', memberId))
 }
+
+// ─── popups ───────────────────────────────────────────────────────────────────
+
+export async function getPopups(siteId) {
+  const q = query(siteCol(siteId, 'popups'), orderBy('createdAt', 'desc'))
+  return snaps(await getDocs(q))
+}
+
+export async function addPopup(siteId, data) {
+  return addDoc(siteCol(siteId, 'popups'), {
+    ...data,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function updatePopup(siteId, popupId, data) {
+  return updateDoc(siteDoc(siteId, 'popups', popupId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export async function deletePopup(siteId, popupId) {
+  return deleteDoc(siteDoc(siteId, 'popups', popupId))
+}
+
+// Only one popup should be active at a time — deactivate all others in a batch
+export async function setActivePopup(siteId, activeId) {
+  const all   = await getPopups(siteId)
+  const batch = writeBatch(db)
+  all.forEach(p => {
+    batch.update(siteDoc(siteId, 'popups', p.id), { active: p.id === activeId })
+  })
+  return batch.commit()
+}

@@ -9,6 +9,7 @@ import BlogEditor from '@/pages/sites/BlogEditor'
 import Gallery    from '@/pages/sites/Gallery'
 import Pages      from '@/pages/sites/Pages'
 import Team       from '@/pages/sites/Team'
+import Popups     from '@/pages/sites/Popups'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="gallery"           element={<Gallery />} />
           <Route path="pages"             element={<Pages />} />
           <Route path="team"              element={<Team />} />
+          <Route path="popups"            element={<Popups />} />
         </Route>
       </Route>
 
